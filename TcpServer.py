@@ -1,7 +1,7 @@
 
 from socket import *
 from threading import Thread
-from PrintHandler import PrintHandler
+from SimpleHandler import SimpleHandler
 
 
 class TcpServer:
@@ -51,14 +51,10 @@ class TcpServer:
     #Loop for sending thread
     def sendingLoop(self):
         while(self.running):
-            for data in self.sendBuffer:
-                try:
-                    self.clientSocket.sendingLoop(data.encode('UTF-8'))
-                except Exception:
-                    self.running = False
-                    self.sendBuffer = list()
-                    return
-            self.sendBuffer = list()
+            while self.sendBuffer:
+                data = self.sendBuffer.pop(0)
+                self.clientSocket.send(data.encode("utf-8"))
+
 
     #Loop for receiving thread
     def receivingLoop(self):
@@ -68,7 +64,7 @@ class TcpServer:
             except ConnectionAbortedError:
                 return
             if not data:
-                self.running = False;
+                self.stop()
                 return
             self.receiveBuffer.append(data)
 
@@ -101,13 +97,19 @@ class TcpServer:
 
 con = TcpServer(2008)
 con.setAcceptAddress('0.0.0.0')
-con.setMessageHandler(PrintHandler())
+con.setMessageHandler(SimpleHandler())
 tcpThread = Thread(target=con.start)
 tcpThread.start()
-
+num = 0
+first = True
 while True:
     received = con.getHandledData()
     if received:
-        print("printing data outside TcpServer object: " + received)
-        con.stop()
-        break
+        num = int(received) +1
+        print("printing data outside TcpServer object: " + received + ":" + str(num))
+
+        con.send(str(num))
+    if first:
+        con.send(str(num))
+        first = False
+
