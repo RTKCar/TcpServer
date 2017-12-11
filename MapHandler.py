@@ -2,6 +2,6 @@
 
 from MessageHandler import MessageHandler
 
-class PrintHandler(MessageHandler):
+class MapHandeler(MessageHandler):
     def handle(self, data):
         print(data)

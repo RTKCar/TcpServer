@@ -1,7 +1,8 @@
 
 from socket import *
 from threading import Thread
-from PrintHandler import PrintHandler
+from ReadHandler import ReadHandler
+from WriteHandler import WriteHandler
 
 
 class TcpServer:
@@ -17,18 +18,18 @@ class TcpServer:
         self.sendingThread      = Thread(target=self.send)
 
 
-#TODO fix timeout for listening for connections
+    #TODO fix timeout for listening for connections
     def connect(self):
         print("Waiting for connection")
         self.listenSocket = socket(AF_INET, SOCK_STREAM)
         self.listenSocket.bind((self.acceptAddress, self.serverPort))
-        self.listenSocket.listen(1)
+        self.listenSocket.listen(3)
         (self.clientSocket, self.clientAddress) = self.listenSocket.accept()
         self.listenSocket.close()
         print("Connection established - Client: " + str(self.clientAddress))
 
 
-#TODO fix disconnect, client needs to know server is disconnecting
+    #TODO fix disconnect, client needs to know server is disconnecting
     def disconnect(self):
         self.clientSocket.close()
 
@@ -44,10 +45,16 @@ class TcpServer:
                 data = self.receiveBuffer.pop(0)
                 handledData = self.messageHandler.handle(data)
                 if(handledData):
+                    if(handledData[0]):
+                        self.dataList.append(handledData[0])
                     if(handledData[1]):
-                        self.dataList.append(handledData[1])
-                    if(handledData[2]):
-                        self.sendBuffer.append(handledData[2])
+                        self.sendBuffer.append(handledData[1])
+        self.disconnect()
+
+
+    def sendToGUI(self, data):
+            self.sendBuffer.append(data)
+
 
     def send(self):
         while(self.running):
@@ -58,15 +65,21 @@ class TcpServer:
     def receive(self):
         while(self.running):
             data = self.clientSocket.recv(1024).decode('UTF-8')
+            if not data:
+                self.running = False
+                print("Client Dissconnected")
+                return
             self.receiveBuffer.append(data)
 
-
     def getData(self):
-        return dataList.pop(0)
+        if self.dataList:
+            return self.dataList.pop(0)
+        return False
+
 
     def stop(self):
         self.running = False
-        disconnect()
+        self.disconnect()
 
     def start(self):
         self.connect()
@@ -81,7 +94,27 @@ class TcpServer:
         self.messageHandler = messageHandler
 
 
-con = TcpServer(9000)
-con.setAcceptAddress('0.0.0.0')
-con.setMessageHandler(PrintHandler())
-con.start()
+if __name__ == '__main__':
+
+    rtkCon = TcpServer(2008)
+    rtkCon.setAcceptAddress('0.0.0.0')
+    rtkCon.setMessageHandler(WriteHandler())
+    rtkThread = Thread(target=rtkCon.start)
+    rtkThread.start()
+
+    mapCon = TcpServer(2009)
+    mapCon.setAcceptAddress('0.0.0.0')
+    mapCon.setMessageHandler(ReadHandler())
+    mapThread = Thread(target=mapCon.start)
+    mapThread.start()
+
+    while True:
+        data = rtkCon.getData()
+        if data:
+            mapCon.sendToGUI(data)
+        data = mapCon.getData()
+        if data:
+            if data.startswith('MAP'):
+                print(data, " kolla denna boiii")
+
+
