@@ -43,11 +43,10 @@ class TcpServer:
             if(self.receiveBuffer):
                 data = self.receiveBuffer.pop(0)
                 handledData = self.messageHandler.handle(data) #Returns touple with (handledData, response to client)
-                if(handledData):
-                    if(handledData[0]):
-                        self.handledData.append(handledData[0])
-                    if(handledData[1]):
-                        self.sendBuffer.append(handledData[1])
+                if(handledData[0]):
+                    self.handledData.append(handledData[0])
+                if(handledData[1]):
+                    self.sendBuffer.append(handledData[1])
 
     #Loop for sending thread
     def sendingLoop(self):
@@ -64,10 +63,13 @@ class TcpServer:
     #Loop for receiving thread
     def receivingLoop(self):
         while(self.running):
-            data = self.clientSocket.recv(1024).decode('UTF-8')
-                if not data:
-                    self.running = False;
-                    return
+            try:
+                data = self.clientSocket.recv(1024).decode('UTF-8')
+            except ConnectionAbortedError:
+                return
+            if not data:
+                self.running = False;
+                return
             self.receiveBuffer.append(data)
 
     #Method to be able to send data from outside class outside
@@ -82,7 +84,7 @@ class TcpServer:
 
     def stop(self):
         self.running = False
-        disconnect()
+        self.disconnect()
 
     def start(self):
         self.connect()
@@ -97,7 +99,15 @@ class TcpServer:
         self.messageHandler = messageHandler
 
 
-con = TcpServer(9000)
+con = TcpServer(2008)
 con.setAcceptAddress('0.0.0.0')
 con.setMessageHandler(PrintHandler())
-con.start()
+tcpThread = Thread(target=con.start)
+tcpThread.start()
+
+while True:
+    received = con.getHandledData()
+    if received:
+        print("printing data outside TcpServer object: " + received)
+        con.stop()
+        break
