@@ -7,14 +7,14 @@ from PrintHandler import PrintHandler
 class TcpServer:
     def __init__(self, listenPort):
         self.serverPort = listenPort
-        self.dataList = list()
+        self.handledData = list()
         self.acceptAddress = 'localhost'
 
         self.running            = False
         self.receiveBuffer      = list()
         self.sendBuffer         = list()
-        self.receivingThread    = Thread(target=self.receive)
-        self.sendingThread      = Thread(target=self.send)
+        self.receivingThread    = Thread(target=self.receivingLoop)
+        self.sendingThread      = Thread(target=self.sendingLoop)
 
 
 #TODO fix timeout for listening for connections
@@ -42,27 +42,43 @@ class TcpServer:
         while(self.running):
             if(self.receiveBuffer):
                 data = self.receiveBuffer.pop(0)
-                handledData = self.messageHandler.handle(data)
+                handledData = self.messageHandler.handle(data) #Returns touple with (handledData, response to client)
                 if(handledData):
+                    if(handledData[0]):
+                        self.handledData.append(handledData[0])
                     if(handledData[1]):
-                        self.dataList.append(handledData[1])
-                    if(handledData[2]):
-                        self.sendBuffer.append(handledData[2])
+                        self.sendBuffer.append(handledData[1])
 
-    def send(self):
+    #Loop for sending thread
+    def sendingLoop(self):
         while(self.running):
             for data in self.sendBuffer:
-                self.clientSocket.send(data.encode('UTF-8'))
+                try:
+                    self.clientSocket.sendingLoop(data.encode('UTF-8'))
+                except Exception:
+                    self.running = False
+                    self.sendBuffer = list()
+                    return
             self.sendBuffer = list()
 
-    def receive(self):
+    #Loop for receiving thread
+    def receivingLoop(self):
         while(self.running):
             data = self.clientSocket.recv(1024).decode('UTF-8')
+                if not data:
+                    self.running = False;
+                    return
             self.receiveBuffer.append(data)
 
+    #Method to be able to send data from outside class outside
+    def send(self, data):
+        self.sendBuffer.append(data);
 
-    def getData(self):
-        return dataList.pop(0)
+    # get data handled with defined messagehandler
+    def getHandledData(self):
+        if(self.handledData):
+            return self.handledData.pop(0)
+        return False
 
     def stop(self):
         self.running = False
