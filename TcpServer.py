@@ -1,10 +1,6 @@
 
 from socket import *
 from threading import Thread
-from PrintHandler import PrintHandler
-from MessageHandler import MessageHandler
-from NmeaHandler import NmeaHandler
-from sys import getsizeof
 
 
 class TcpServer:
@@ -70,7 +66,6 @@ class TcpServer:
         while(self.running):
             for data in self.sendBuffer:
                 try:
-                    print("Sending data: ---" + str(getsizeof(data)) + "---" + data)
                     self.clientSocket.send(data.encode('UTF-8'))
                 except Exception as e:
                     print(e)
