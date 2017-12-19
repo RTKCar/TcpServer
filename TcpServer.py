@@ -2,6 +2,9 @@
 from socket import *
 from threading import Thread
 from PrintHandler import PrintHandler
+from MessageHandler import MessageHandler
+from NmeaHandler import NmeaHandler
+from sys import getsizeof
 
 
 class TcpServer:
@@ -15,22 +18,34 @@ class TcpServer:
         self.sendBuffer         = list()
         self.receivingThread    = Thread(target=self.receivingLoop)
         self.sendingThread      = Thread(target=self.sendingLoop)
+        self.connected = False
+
 
 
 #TODO fix timeout for listening for connections
     def connect(self):
         print("Waiting for connection")
         self.listenSocket = socket(AF_INET, SOCK_STREAM)
-        self.listenSocket.bind((self.acceptAddress, self.serverPort))
+        try:
+            self.listenSocket.bind((self.acceptAddress, self.serverPort))
+        except Exception as e:
+            print(e)
+            self.listenSocket.close()
+            return
         self.listenSocket.listen(1)
         (self.clientSocket, self.clientAddress) = self.listenSocket.accept()
         self.listenSocket.close()
+        #self.clientSocket.settimeout(1)
         print("Connection established - Client: " + str(self.clientAddress))
+        self.connected = True
 
+    def isConnected(self):
+        return self.connected
 
 #TODO fix disconnect, client needs to know server is disconnecting
     def disconnect(self):
-        self.clientSocket.close()
+        if self.isConnected():
+            self.clientSocket.close()
 
     def setAcceptAddress(self, ip):
         self.acceptAddress = ip
@@ -43,18 +58,22 @@ class TcpServer:
             if(self.receiveBuffer):
                 data = self.receiveBuffer.pop(0)
                 handledData = self.messageHandler.handle(data) #Returns touple with (handledData, response to client)
-                if(handledData[0]):
-                    self.handledData.append(handledData[0])
-                if(handledData[1]):
-                    self.sendBuffer.append(handledData[1])
+                if handledData:
+                    if(handledData[0]):
+                        self.handledData.append(handledData[0])
+                    if(handledData[1]):
+                        self.sendBuffer.append(handledData[1])
+        #self.disconnect()
 
     #Loop for sending thread
     def sendingLoop(self):
         while(self.running):
             for data in self.sendBuffer:
                 try:
-                    self.clientSocket.sendingLoop(data.encode('UTF-8'))
-                except Exception:
+                    print("Sending data: ---" + str(getsizeof(data)) + "---" + data)
+                    self.clientSocket.send(data.encode('UTF-8'))
+                except Exception as e:
+                    print(e)
                     self.running = False
                     self.sendBuffer = list()
                     return
@@ -65,16 +84,19 @@ class TcpServer:
         while(self.running):
             try:
                 data = self.clientSocket.recv(1024).decode('UTF-8')
+                if not data:
+                    self.running = False
             except ConnectionAbortedError:
                 return
-            if not data:
-                self.running = False;
+            except timeout:
+                pass
+
                 return
             self.receiveBuffer.append(data)
 
     #Method to be able to send data from outside class outside
     def send(self, data):
-        self.sendBuffer.append(data);
+        self.sendBuffer.append(data)
 
     # get data handled with defined messagehandler
     def getHandledData(self):
@@ -82,32 +104,34 @@ class TcpServer:
             return self.handledData.pop(0)
         return False
 
+    def isDataAvailable(self):
+        if(self.handledData):
+            return True
+        return False
+
     def stop(self):
         self.running = False
+
+        print("Stopping")
         self.disconnect()
+        if self.sendingThread.isAlive():
+            print("Waiting for sendingthread")
+            self.sendingThread.join()
+        if self.receivingThread.isAlive():
+            print("Waiting for receivingthread")
+            self.receivingThread.join()
+        print("Disconnected and stopped")
+        self.connected = False
 
     def start(self):
         self.connect()
-        self.running = True
-        print("Starting sending thread")
-        self.sendingThread.start()
-        print("Starting receiving thread")
-        self.receivingThread.start()
-        self.run()
+        if(self.isConnected()):
+            self.running = True
+            print("Starting sending thread")
+            self.sendingThread.start()
+            print("Starting receiving thread")
+            self.receivingThread.start()
+            self.run()
 
     def setMessageHandler(self, messageHandler):
         self.messageHandler = messageHandler
-
-
-con = TcpServer(2008)
-con.setAcceptAddress('0.0.0.0')
-con.setMessageHandler(PrintHandler())
-tcpThread = Thread(target=con.start)
-tcpThread.start()
-
-while True:
-    received = con.getHandledData()
-    if received:
-        print("printing data outside TcpServer object: " + received)
-        con.stop()
-        break
