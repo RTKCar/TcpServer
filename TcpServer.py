@@ -4,10 +4,11 @@ from threading import Thread
 
 
 class TcpServer:
-    def __init__(self, listenPort):
+    def __init__(self, listenPort, identifier=""):
         self.serverPort = listenPort
         self.handledData = list()
         self.acceptAddress = 'localhost'
+        self.id = identifier
 
         self.running            = False
         self.receiveBuffer      = list()
@@ -20,19 +21,18 @@ class TcpServer:
 
 #TODO fix timeout for listening for connections
     def connect(self):
-        print("Waiting for connection")
+        print("[" + self.id + "]Waiting for connection")
         self.listenSocket = socket(AF_INET, SOCK_STREAM)
+        self.listenSocket.bind((self.acceptAddress, self.serverPort))
+        self.listenSocket.listen(1)
         try:
-            self.listenSocket.bind((self.acceptAddress, self.serverPort))
+            (self.clientSocket, self.clientAddress) = self.listenSocket.accept()
         except Exception as e:
             print(e)
             self.listenSocket.close()
             return
-        self.listenSocket.listen(1)
-        (self.clientSocket, self.clientAddress) = self.listenSocket.accept()
         self.listenSocket.close()
-        #self.clientSocket.settimeout(1)
-        print("Connection established - Client: " + str(self.clientAddress))
+        print("[" + self.id +"]Connection established - Client: " + str(self.clientAddress))
         self.connected = True
 
     def isConnected(self):
@@ -42,6 +42,8 @@ class TcpServer:
     def disconnect(self):
         if self.isConnected():
             self.clientSocket.close()
+        else:
+            self.listenSocket.close()
 
     def setAcceptAddress(self, ip):
         self.acceptAddress = ip
@@ -106,25 +108,24 @@ class TcpServer:
 
     def stop(self):
         self.running = False
-
-        print("Stopping")
+        print("["+ self.id + "]Stopping server")
         self.disconnect()
         if self.sendingThread.isAlive():
-            print("Waiting for sendingthread")
+            print("["+ self.id + "]Waiting for sendingthread")
             self.sendingThread.join()
         if self.receivingThread.isAlive():
-            print("Waiting for receivingthread")
+            print("["+ self.id + "]Waiting for receivingthread")
             self.receivingThread.join()
-        print("Disconnected and stopped")
+        print("["+ self.id + "]Disconnected and stopped")
         self.connected = False
 
     def start(self):
         self.connect()
         if(self.isConnected()):
             self.running = True
-            print("Starting sending thread")
+            print("[" + self.id + "]Starting sending thread")
             self.sendingThread.start()
-            print("Starting receiving thread")
+            print("[" + self.id + "]Starting receiving thread")
             self.receivingThread.start()
             self.run()
 
