@@ -7,4 +7,4 @@ class PrintHandler(MessageHandler):
         if not data:
             return
         print(data)
-        return (data, False)
+        return (data)
