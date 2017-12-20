@@ -18,10 +18,20 @@ class TcpServer:
         self.connected = False
 
 
+    def reset(self):
+        print("[" + self.id + "] Resetting")
+        if self.running:
+            self.stop()
+        self.running= False
+        self.handledData = list()
+        self.receiveBuffer = list()
+        self.sendBuffer = list()
+        self.receivingThread = Thread(target=self.receivingLoop)
+        self.sendingThread = Thread(target=self.sendingLoop)
 
-#TODO fix timeout for listening for connections
+    #open a listening socket on set port to listen for client connections
     def connect(self):
-        print("[" + self.id + "]Waiting for connection")
+        print("[" + self.id + "] Waiting for connection")
         self.listenSocket = socket(AF_INET, SOCK_STREAM)
         self.listenSocket.bind((self.acceptAddress, self.serverPort))
         self.listenSocket.listen(1)
@@ -32,8 +42,11 @@ class TcpServer:
             self.listenSocket.close()
             return
         self.listenSocket.close()
-        print("[" + self.id +"]Connection established - Client: " + str(self.clientAddress))
+        print("[" + self.id +"] Connection established - Client: " + str(self.clientAddress))
         self.connected = True
+
+    def isRunning(self):
+        return self.running
 
     def isConnected(self):
         return self.connected
@@ -45,12 +58,15 @@ class TcpServer:
         else:
             self.listenSocket.close()
 
+    #set which IP addresses the server accepts
     def setAcceptAddress(self, ip):
         self.acceptAddress = ip
 
+    #set which port the server listens on
     def setServerPort(self, port):
         self.serverPort = port
 
+    #main server loop
     def run(self):
         while(self.running):
             if(self.receiveBuffer):
@@ -61,7 +77,7 @@ class TcpServer:
                         self.handledData.append(handledData[0])
                     if(handledData[1]):
                         self.sendBuffer.append(handledData[1])
-        #self.disconnect()
+        print("[" + self.id + "] Server stopping")
 
     #Loop for sending thread
     def sendingLoop(self):
@@ -75,6 +91,7 @@ class TcpServer:
                     self.sendBuffer = list()
                     return
             self.sendBuffer = list()
+        print("[" + self.id + "] Sendingloop stopping")
 
     #Loop for receiving thread
     def receivingLoop(self):
@@ -87,9 +104,9 @@ class TcpServer:
                 return
             except timeout:
                 pass
-
                 return
             self.receiveBuffer.append(data)
+        print("[" + self.id + "] Receivingloop stopping")
 
     #Method to be able to send data from outside class outside
     def send(self, data):
@@ -101,33 +118,36 @@ class TcpServer:
             return self.handledData.pop(0)
         return False
 
+    #check if server has received data
     def isDataAvailable(self):
         if(self.handledData):
             return True
         return False
 
+    #stops the server
     def stop(self):
         self.running = False
-        print("["+ self.id + "]Stopping server")
+        print("["+ self.id + "] Stopping server")
         self.disconnect()
         if self.sendingThread.isAlive():
-            print("["+ self.id + "]Waiting for sendingthread")
+            print("["+ self.id + "] Waiting for sendingthread")
             self.sendingThread.join()
         if self.receivingThread.isAlive():
-            print("["+ self.id + "]Waiting for receivingthread")
+            print("["+ self.id + "] Waiting for receivingthread")
             self.receivingThread.join()
-        print("["+ self.id + "]Disconnected and stopped")
+        print("["+ self.id + "] Disconnected and stopped")
         self.connected = False
 
+    #starts server
     def start(self):
+        self.running = True
         self.connect()
         if(self.isConnected()):
-            self.running = True
-            print("[" + self.id + "]Starting sending thread")
+            print("[" + self.id + "] Starting sending thread")
             self.sendingThread.start()
-            print("[" + self.id + "]Starting receiving thread")
+            print("[" + self.id + "] Starting receiving thread")
             self.receivingThread.start()
             self.run()
-
+        self.running = False
     def setMessageHandler(self, messageHandler):
         self.messageHandler = messageHandler
