@@ -6,16 +6,10 @@ from threading import Thread
 class TcpServer:
     def __init__(self, listenPort, identifier=""):
         self.serverPort = listenPort
-        self.handledData = list()
         self.acceptAddress = 'localhost'
         self.id = identifier
+        self.running = False
 
-        self.running            = False
-        self.receiveBuffer      = list()
-        self.sendBuffer         = list()
-        self.receivingThread    = Thread(target=self.receivingLoop)
-        self.sendingThread      = Thread(target=self.sendingLoop)
-        self.connected = False
 
 
     def reset(self):
@@ -57,6 +51,7 @@ class TcpServer:
             self.clientSocket.close()
         else:
             self.listenSocket.close()
+        self.connected = False
 
     #set which IP addresses the server accepts
     def setAcceptAddress(self, ip):
@@ -77,7 +72,7 @@ class TcpServer:
                         self.handledData.append(handledData[0])
                     if(handledData[1]):
                         self.sendBuffer.append(handledData[1])
-        print("[" + self.id + "] Server stopping")
+        self.stop()
 
     #Loop for sending thread
     def sendingLoop(self):
@@ -89,6 +84,7 @@ class TcpServer:
                     print(e)
                     self.running = False
                     self.sendBuffer = list()
+                    print("[" + self.id + "] Sendingloop stopping")
                     return
             self.sendBuffer = list()
         print("[" + self.id + "] Sendingloop stopping")
@@ -126,7 +122,6 @@ class TcpServer:
 
     #stops the server
     def stop(self):
-        self.running = False
         print("["+ self.id + "] Stopping server")
         self.disconnect()
         if self.sendingThread.isAlive():
@@ -136,12 +131,15 @@ class TcpServer:
             print("["+ self.id + "] Waiting for receivingthread")
             self.receivingThread.join()
         print("["+ self.id + "] Disconnected and stopped")
-        self.connected = False
+        self.running = False
+
 
     #starts server
     def start(self):
+        self.reset()
         self.running = True
         self.connect()
+
         if(self.isConnected()):
             print("[" + self.id + "] Starting sending thread")
             self.sendingThread.start()
