@@ -2,55 +2,71 @@
 from threading import Thread
 from TcpServer import TcpServer
 from PrintHandler import PrintHandler
+from GuiHandler import GuiHandler
 
-RoverCon = TcpServer(9000, "Testing")
+RoverCon = TcpServer(9001, "Rover")
 RoverCon.setAcceptAddress("0.0.0.0")
 RoverCon.setMessageHandler(PrintHandler())
 RoverThread = Thread()
 
-RTKCon = TcpServer(9000, "Testing")
+RTKCon = TcpServer(9002, "RTK")
 RTKCon.setAcceptAddress("0.0.0.0")
 RTKCon.setMessageHandler(PrintHandler())
 RTKThread = Thread()
 
-GuiCon = TcpServer(9000, "Testing")
+GuiCon = TcpServer(9003, "GUI")
 GuiCon.setAcceptAddress("0.0.0.0")
-GuiCon.setMessageHandler(PrintHandler())
+GuiCon.setMessageHandler(GuiHandler())
 GuiThread = Thread()
 
 
 
-def GUI()
+def GUI():
+    global GuiThread
     if not GuiCon.isRunning():
-        if GuiThread.isAlive():
+        if GuiThread.is_alive():
             GuiThread.join()
-        GuiThread = Thread(target=testCon.start)
+        GuiThread = Thread(target=GuiCon.start)
         GuiThread.start()
 
     data = ""
     if GuiCon.isDataAvailable():
         data = GuiCon.getHandledData()
+        print(data)
 
-    RTKCon.send(data)
 
-
-def RTK()
-    if not testCon.isRunning():
-        if thread.isAlive():
-            thread.join()
-        thread = Thread(target=testCon.start)
+def RTK():
+    if not RTKCon.isRunning():
+        if RTKThread.isAlive():
+            RTKThread.join()
+        thread = Thread(target=RTKCon.start)
         thread.start()
 
-def Rover()
-    pass
+def Rover():
+    if not RoverCon.isRunning():
+        if RoverThread.is_alive():
+            RoverThread.join()
+        thread = Thread(target=RoverCon.start)
+        thread.start()
 
 
 
 try:
     while True:
-
+        GUI()
+        RTK()
+        Rover()
 except KeyboardInterrupt as e:
     print(e)
-    testCon.stop()
-    thread.join()
+    print("Stopping")
+    GuiCon.stopServer()
+   # if GuiThread.isAlive():
+   #     GuiThread.join()
+    RTKCon.stopServer()
+   # if RTKThread.isAlive():
+   #     RTKThread.join()
+    RoverCon.stopServer()
+  #  if RoverThread.isAlive():
+  #      RoverThread.join()
+    print("wtf")
 

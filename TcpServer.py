@@ -1,4 +1,3 @@
-
 from socket import *
 from threading import Thread
 
@@ -9,14 +8,20 @@ class TcpServer:
         self.acceptAddress = 'localhost'
         self.id = identifier
         self.running = False
-
-
+        self.connected = False
+        self.handledData = list()
+        self.receiveBuffer = list()
+        self.sendBuffer = list()
+        self.receivingThread = Thread(target=self.receivingLoop)
+        self.sendingThread = Thread(target=self.sendingLoop)
+        self.listenSocket = socket(AF_INET, SOCK_STREAM)
 
     def reset(self):
         print("[" + self.id + "] Resetting")
         if self.running:
             self.stop()
         self.running= False
+        self.connected = False
         self.handledData = list()
         self.receiveBuffer = list()
         self.sendBuffer = list()
@@ -32,8 +37,7 @@ class TcpServer:
         try:
             (self.clientSocket, self.clientAddress) = self.listenSocket.accept()
         except Exception as e:
-            print(e)
-            self.listenSocket.close()
+            print("[" + self.id + "]" + str(e) + "Stopped listening")
             return
         self.listenSocket.close()
         print("[" + self.id +"] Connection established - Client: " + str(self.clientAddress))
@@ -47,10 +51,22 @@ class TcpServer:
 
 #TODO fix disconnect, client needs to know server is disconnecting
     def disconnect(self):
-        if self.isConnected():
+        try:
+            self.clientSocket.shutdown(SHUT_RDWR)
+        except Exception as e:
+            print("["+self.id+"]"+str(e))
+        try:
             self.clientSocket.close()
-        else:
+        except Exception as e:
+            print("["+self.id+"]"+str(e))
+        try:
+            self.listenSocket.shutdown(SHUT_RDWR)
+        except Exception as e:
+            print("["+self.id+"]"+str(e))
+        try:
             self.listenSocket.close()
+        except Exception as e:
+            print("["+self.id+"]"+str(e))
         self.connected = False
 
     #set which IP addresses the server accepts
@@ -68,10 +84,7 @@ class TcpServer:
                 data = self.receiveBuffer.pop(0)
                 handledData = self.messageHandler.handle(data) #Returns touple with (handledData, response to client)
                 if handledData:
-                    if(handledData[0]):
-                        self.handledData.append(handledData[0])
-                    if(handledData[1]):
-                        self.sendBuffer.append(handledData[1])
+                    self.handledData.append(handledData)
         self.stop()
 
     #Loop for sending thread
@@ -85,6 +98,8 @@ class TcpServer:
                     self.running = False
                     self.sendBuffer = list()
                     print("[" + self.id + "] Sendingloop stopping")
+                finally:
+                    print("[" + self.id + "] Receivingloop stopping")
                     return
             self.sendBuffer = list()
         print("[" + self.id + "] Sendingloop stopping")
@@ -96,12 +111,16 @@ class TcpServer:
                 data = self.clientSocket.recv(1024).decode('UTF-8')
                 if not data:
                     self.running = False
+                self.receiveBuffer.append(data)
             except ConnectionAbortedError:
+                self.running = False
+            except Exception as e:
+                print(e)
+                self.running = False
+            finally:
+                print("[" + self.id + "] Receivingloop stopping")
                 return
-            except timeout:
-                pass
-                return
-            self.receiveBuffer.append(data)
+
         print("[" + self.id + "] Receivingloop stopping")
 
     #Method to be able to send data from outside class outside
@@ -120,10 +139,15 @@ class TcpServer:
             return True
         return False
 
+    def stopServer(self):
+        self.running = False
+        self.disconnect()
+
+
     #stops the server
     def stop(self):
-        print("["+ self.id + "] Stopping server")
         self.disconnect()
+        print("["+ self.id + "] Stopping server")
         if self.sendingThread.isAlive():
             print("["+ self.id + "] Waiting for sendingthread")
             self.sendingThread.join()
@@ -131,7 +155,6 @@ class TcpServer:
             print("["+ self.id + "] Waiting for receivingthread")
             self.receivingThread.join()
         print("["+ self.id + "] Disconnected and stopped")
-        self.running = False
 
 
     #starts server
