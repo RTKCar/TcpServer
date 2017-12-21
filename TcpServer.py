@@ -33,16 +33,22 @@ class TcpServer:
         print("[" + self.id + "] Waiting for connection")
         self.listenSocket = socket(AF_INET, SOCK_STREAM)
         self.listenSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.listenSocket.bind((self.acceptAddress, self.serverPort))
+        try:
+            self.listenSocket.bind((self.acceptAddress, self.serverPort))
+        except OSError as e:
+            print(e)
+            return False
         self.listenSocket.listen(1)
         try:
             (self.clientSocket, self.clientAddress) = self.listenSocket.accept()
         except Exception as e:
             print("[" + self.id + "]" + str(e) + "Stopped listening")
-            return
+            return False
+        self.listenSocket.shutdown()
         self.listenSocket.close()
         print("[" + self.id +"] Connection established - Client: " + str(self.clientAddress))
         self.connected = True
+        return True
 
     def isRunning(self):
         return self.running
