@@ -14,8 +14,7 @@ class TcpServer:
         self.sendBuffer = list()
         self.receivingThread = Thread(target=self.receivingLoop)
         self.sendingThread = Thread(target=self.sendingLoop)
-        self.listenSocket = socket(AF_INET, SOCK_STREAM)
-        self.listenSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+
 
     def reset(self):
         print("[" + self.id + "] Resetting")
@@ -33,6 +32,7 @@ class TcpServer:
     def connect(self):
         print("[" + self.id + "] Waiting for connection")
         self.listenSocket = socket(AF_INET, SOCK_STREAM)
+        self.listenSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.listenSocket.bind((self.acceptAddress, self.serverPort))
         self.listenSocket.listen(1)
         try:
