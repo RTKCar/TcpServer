@@ -100,7 +100,6 @@ class TcpServer:
                     self.running = False
                     self.sendBuffer = list()
                     print("[" + self.id + "] Sendingloop stopping")
-            self.sendBuffer = list()
         print("[" + self.id + "] Sendingloop stopping ")
 
     #Loop for receiving thread

@@ -36,6 +36,7 @@ def GUI():
 
     if GuiCon.isDataAvailable():
         data = GuiCon.getHandledData()
+        print(data)
         if data[0] == 0:
             parsed_JSON_obj = data[1]
             map_analysis = MapAnalysis(parsed_JSON_obj)
