@@ -91,8 +91,9 @@ class TcpServer:
     #Loop for sending thread
     def sendingLoop(self):
         while(self.running):
-            for data in self.sendBuffer:
+            if self.sendBuffer:
                 try:
+                    data = self.sendBuffer.pop(0)
                     self.clientSocket.send(data.encode('UTF-8'))
                 except Exception as e:
                     print(e)
@@ -100,7 +101,7 @@ class TcpServer:
                     self.sendBuffer = list()
                     print("[" + self.id + "] Sendingloop stopping")
             self.sendBuffer = list()
-        print("[" + self.id + "] Sendingloop stopping 2")
+        print("[" + self.id + "] Sendingloop stopping ")
 
     #Loop for receiving thread
     def receivingLoop(self):
@@ -116,7 +117,7 @@ class TcpServer:
                 print(e)
                 self.running = False
 
-        print("[" + self.id + "] Receivingloop stopping 2")
+        print("[" + self.id + "] Receivingloop stopping ")
 
     #Method to be able to send data from outside class outside
     def send(self, data):
