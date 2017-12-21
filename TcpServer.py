@@ -109,7 +109,8 @@ class TcpServer:
                 data = self.clientSocket.recv(1024).decode('UTF-8')
                 if not data:
                     self.running = False
-                self.receiveBuffer.append(data)
+                else:
+                    self.receiveBuffer.append(data)
             except ConnectionAbortedError:
                 self.running = False
             except Exception as e:
