@@ -98,9 +98,6 @@ class TcpServer:
                     self.running = False
                     self.sendBuffer = list()
                     print("[" + self.id + "] Sendingloop stopping")
-                finally:
-                    print("[" + self.id + "] Receivingloop stopping")
-                    return
             self.sendBuffer = list()
         print("[" + self.id + "] Sendingloop stopping 2")
 
@@ -117,11 +114,8 @@ class TcpServer:
             except Exception as e:
                 print(e)
                 self.running = False
-            finally:
-                print("[" + self.id + "] Receivingloop stopping")
-                return
 
-        print("[" + self.id + "] Receivingloop stopping")
+        print("[" + self.id + "] Receivingloop stopping 2")
 
     #Method to be able to send data from outside class outside
     def send(self, data):
