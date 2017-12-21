@@ -105,8 +105,6 @@ class TcpServer:
                     print(e)
                     self.running = False
                     self.sendBuffer = list()
-                    print("[" + self.id + "] Sendingloop stopping")
-        print("[" + self.id + "] Sendingloop stopping ")
 
     #Loop for receiving thread
     def receivingLoop(self):
@@ -123,7 +121,6 @@ class TcpServer:
                 print(e)
                 self.running = False
 
-        print("[" + self.id + "] Receivingloop stopping ")
 
     #Method to be able to send data from outside class outside
     def send(self, data):
@@ -149,12 +146,9 @@ class TcpServer:
     #stops the server
     def stop(self):
         self.disconnect()
-        print("["+ self.id + "] Stopping server")
         if self.sendingThread.isAlive():
-            print("["+ self.id + "] Waiting for sendingthread")
             self.sendingThread.join()
         if self.receivingThread.isAlive():
-            print("["+ self.id + "] Waiting for receivingthread")
             self.receivingThread.join()
         print("["+ self.id + "] Disconnected and stopped")
 
@@ -166,9 +160,7 @@ class TcpServer:
         self.connect()
 
         if(self.isConnected()):
-            print("[" + self.id + "] Starting sending thread")
             self.sendingThread.start()
-            print("[" + self.id + "] Starting receiving thread")
             self.receivingThread.start()
             self.run()
         self.running = False
