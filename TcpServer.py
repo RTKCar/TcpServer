@@ -15,6 +15,7 @@ class TcpServer:
         self.receivingThread = Thread(target=self.receivingLoop)
         self.sendingThread = Thread(target=self.sendingLoop)
         self.listenSocket = socket(AF_INET, SOCK_STREAM)
+        self.listenSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     def reset(self):
         print("[" + self.id + "] Resetting")
