@@ -14,7 +14,6 @@ class MapAnalysis:
         self.PreviousNode = -1
         self.currentNode = dict()
         self.parsed_JSON_obj = parsed_JSON_obj
-        pass
 
     def init_map(self):
         return self.init_process
@@ -22,12 +21,10 @@ class MapAnalysis:
     def sub_system_state(self, state):
         if state is True:
             self.sub_state = True
-            print('SUBSYSTEM TRUE')
             return True
 
 
     def findClosestNode(self, RTK_point):
-        print("findShortestDistance")
         dist = 9999999999.9
         index = -1
         for i in range(0, len(self.parsed_JSON_obj)):
@@ -38,11 +35,9 @@ class MapAnalysis:
             if tempDist < dist:
                 index = i
         self.ClosestNode = index
-        print(index, " index")
 
 
     def getShortestDistance(self, RTK_point, ref_point):
-        print("getShortestDistance")
         # approximate radius of earth in km
         R = 6373.0
 
@@ -59,32 +54,16 @@ class MapAnalysis:
 
         distance = R * c
         distance = distance * 100000
-        print("Result:", distance)
         return distance
 
 
     def getJsonIndex(self, jsonID):
-        print("getJsonIndex")
         for i in range(0, len(self.parsed_JSON_obj)):
             if self.parsed_JSON_obj[i].id == jsonID:
                 return i
         return -1
 
-
-    def split_and_tuple(self, handleData):
-        #print(handleData)
-        temp, shit = handleData.split(';')
-        split_data1, split_data2 = temp.split(',')
-        split_data1 = float(split_data1)
-        split_data2 = float(split_data2)
-        previous_Posdata = (split_data1, split_data2)
-        return previous_Posdata
-        # print(previous_Posdata, " previous_Posdata")
-
-
-
     def Algo_peerPersuit(self, RTK_point):
-        print("Algo_peerPersuit")
         if self.init_process:
             self.init_process = False
             self.findClosestNode(RTK_point)
@@ -113,13 +92,9 @@ class MapAnalysis:
         return return_data
 
     def nextNodeIndex(self):
-        print("nextNodeIndex")
         if self.PreviousNode is -1:
-            print ("prevNode == -1")
-            print (self.ClosestNode, "returnNode")
             return self.ClosestNode
         else:
-            print ("prevNode != -1")
             #Previous node != 1
             node = self.parsed_JSON_obj[self.getJsonIndex(self.PreviousNode)]
             #number = -1
@@ -129,7 +104,6 @@ class MapAnalysis:
                     return number
 
     def getAngle(self, RTK_point, node_point): # Touple = (lat, lon)
-        print("getAngle")
         #pointB = (56.664420928659816, 12.878213831335472)
         if (type(RTK_point) != tuple) or (type(node_point) != tuple):
             raise TypeError("Only tuples are supported as arguments")
@@ -149,9 +123,7 @@ class MapAnalysis:
         # The solution is to normalize the initial bearing as shown below
         initial_bearing = math.degrees(initial_bearing)
         compass_bearing = (initial_bearing + 360) % 360
-        print("inital bearing ", initial_bearing)
-        print("compass bearing ", compass_bearing)
-        send_to_sub_unit = "10:" + compass_bearing + ":0:0:0:0:0:0:0"
+        #send_to_sub_unit = "10:" + str(compass_bearing) + ":0:0:0:0:0:0:0"
         return compass_bearing
 
     def testfunc(self, RTK_point):

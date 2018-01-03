@@ -1,17 +1,25 @@
-import MessageHandler
+from MessageHandler import MessageHandler
 import json
 
-class GuiHandler():
+
+class GuiHandler(MessageHandler):
     def handle(self, data):
         if str(data).startswith("MAP;"):
             ret = self.JSON_parser(data)
             if ret:
-                return (0, data)
-            return (-1,"")
+                return(0, ret)
         elif str(data).startswith("START"):
-            return (1, data)
+            return(1, data)
         elif str(data).startswith("STOP"):
-            return (2, data)
+            return(2, data)
+        elif str(data).startswith("MANUAL"):
+            return(3, data)
+        elif str(data).startswith("SPEED"):
+            return(4, data)
+        return(-1, "")
+ #       elif data.startswith("SWITCH"):
+ #           print('GuiHandler ' + data)
+  #          return (4, data)
 
     def JSON_parser(self, JSON_obj):
         emptyString, split_JSON_obj, emptyShit = JSON_obj.split(';')
@@ -19,7 +27,6 @@ class GuiHandler():
             try:
                 parsed_JSON_obj = json.loads(split_JSON_obj)
                 return parsed_JSON_obj
-                print ("parsing done")
                 #self.print_JSON_obj()
             except Exception as e:
                 print("Unexpected error: " + e)

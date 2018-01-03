@@ -20,7 +20,7 @@ class TcpServer:
 
         self.listenSocket = socket(AF_INET, SOCK_STREAM)
         self.listenSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-
+        self.first = True
         self.clientSocket = None
         self.clientAddress = None
 
@@ -35,21 +35,24 @@ class TcpServer:
         self.sendBuffer.clear()
         self.receivingThread = Thread(target=self.receivingLoop)
         self.sendingThread = Thread(target=self.sendingLoop)
-
+        self.listenSocket = socket(AF_INET, SOCK_STREAM)
+        self.listenSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     # open a listening socket on set port to listen for client connections
     def connect(self):
         print("[" + self.id + "] Waiting for connection")
 
         try:
             self.listenSocket.bind((self.acceptAddress, self.serverPort))
+            self.listenSocket.listen(1)
         except OSError as e:
             print(e)
+            self.disconnect()
             return False
-        self.listenSocket.listen(1)
         try:
             (self.clientSocket, self.clientAddress) = self.listenSocket.accept()
         except Exception as e:
-            print("[" + self.id + "]" + str(e) + "Stopped listening")
+            print("[" + self.id + "]" + str(e) + " Stopped listening")
+            self.disconnect()
             return False
         self.listenSocket.shutdown(SHUT_RDWR)
         self.listenSocket.close()
@@ -134,7 +137,9 @@ class TcpServer:
 
     # get data handled with defined messagehandler
     def getHandledData(self):
+        print('Checking for data')
         if self.handledData:
+            print('Returning Data')
             return self.handledData.pop(0)
         return False
 
@@ -168,5 +173,6 @@ class TcpServer:
             self.receivingThread.start()
             self.run()
         self.running = False
+
     def setMessageHandler(self, messageHandler):
         self.messageHandler = messageHandler
