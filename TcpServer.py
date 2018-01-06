@@ -1,6 +1,7 @@
 from socket import *
 from threading import Thread
 from MessageHandler import MessageHandler
+import datetime
 
 
 class TcpServer:
@@ -110,7 +111,9 @@ class TcpServer:
             if self.sendBuffer:
                 try:
                     data = self.sendBuffer.pop(0)
+                    #print("Data start send by server: " + str(data) + " " + str(datetime.datetime.now()))
                     self.clientSocket.send(data.encode('UTF-8'))
+                    #print("Data done send by server: " + str(data) + " " + str(datetime.datetime.now()))
                 except Exception as e:
                     print(e)
                     self.running = False
@@ -121,6 +124,7 @@ class TcpServer:
         while self.running:
             try:
                 data = self.clientSocket.recv(1024).decode('UTF-8')
+                #print("Data done received by server: " + str(data) + " " + str(datetime.datetime.now()))
                 if not data:
                     self.running = False
                 else:
@@ -137,9 +141,7 @@ class TcpServer:
 
     # get data handled with defined messagehandler
     def getHandledData(self):
-        print('Checking for data')
         if self.handledData:
-            print('Returning Data')
             return self.handledData.pop(0)
         return False
 

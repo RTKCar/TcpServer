@@ -23,12 +23,19 @@ GuiCon.setAcceptAddress("0.0.0.0")
 GuiCon.setMessageHandler(GuiHandler())
 GuiThread = Thread()
 
-parsed_JSON_obj = ()
+#parsed_JSON_obj = ()
 #parsed_JSON_obj = "[{\"conns\":[2,4],\"coord\":{\"lat\":56.67507440022754,\"long\":12.863477416073408},\"id\":1},{\"conns\":[1,3],\"coord\":{\"lat\":56.67501716123367,\"long\":12.862938208261255},\"id\":2},{\"conns\":[2,4],\"coord\":{\"lat\":56.67521716922783,\"long\":12.862889771317356},\"id\":3},{\"conns\":[3,1],\"coord\":{\"lat\":56.675154300977404,\"long\":12.863227111490545},\"id\":4}]"
-#rover_position = ""
-rover_position = (56.67515246104728,12.863372800241422)
-map_analysis = ""
-startSignal = False
+rover_position = ""
+parsed_JSON_obj ="[{\"conns\":[2,4],\"coord\":{\"lat\":56.66329672972045,\"long\":12.878284881888675},\"id\":1},{\"conns\":[1,3],\"coord\":{\"lat\":56.66324094333677,\"long\":12.87838877294243},\"id\":2},{\"conns\":[2,4],\"coord\":{\"lat\":56.66335448141366,\"long\":12.878455855505564},\"id\":3},{\"conns\":[3,1],\"coord\":{\"lat\":56.66337026074343,\"long\":12.87833033757488},\"id\":4}]"
+#rover_position = (56.67515246104728,12.863372800241422)
+#map_analysis = ""
+#startSignal = False
+
+"""
+För test med Aidin under.
+"""
+map_analysis = MapAnalysis(parsed_JSON_obj)
+startSignal = True
 
 def GUI():
     global GuiCon, GuiThread, map_analysis, parsed_JSON_obj, startSignal
@@ -67,7 +74,7 @@ def GUI():
 
 
 def RTK():
-    global rover_position, RTKThread
+    global rover_position, RTKThread, map_analysis
     if not RTKCon.isRunning():
         if RTKThread.isAlive():
             RTKThread.join()
@@ -77,13 +84,17 @@ def RTK():
             pass
     if RTKCon.isDataAvailable():
         data = RTKCon.getHandledData()
+        print("RTK: " + str(data))
         if data[0] == 0:
+            print("Server data from Aidin: " + str(data[1]))
             rover_position = data[1]
             GuiCon.send("0:" + str(data[1][0]) + "," + str(data[1][1]) +
                         "," + str(data[2]) + ";")
             if startSignal:
                 angle = map_analysis.Algo_peerPersuit(rover_position)
+                print("Angle: " + str(angle))
                 RoverCon.send("START:" + str(int(angle)))
+
 
 def Rover():
     global RoverThread
@@ -108,7 +119,7 @@ def Rover():
 try:
     while True:
         GUI()
-        # RTK()
+        RTK()
         Rover()
 except KeyboardInterrupt as e:
     print(e)

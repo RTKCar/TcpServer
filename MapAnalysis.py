@@ -13,7 +13,7 @@ class MapAnalysis:
         self.ClosestNode = -1
         self.PreviousNode = -1
         self.currentNode = dict()
-        self.parsed_JSON_obj = parsed_JSON_obj
+        self.parsed_JSON_obj = self.JSON_parser(parsed_JSON_obj)
 
     def init_map(self):
         return self.init_process
@@ -35,7 +35,6 @@ class MapAnalysis:
             if tempDist < dist:
                 index = i
         self.ClosestNode = index
-
 
     def getShortestDistance(self, RTK_point, ref_point):
         # approximate radius of earth in km
@@ -62,6 +61,21 @@ class MapAnalysis:
             if self.parsed_JSON_obj[i].id == jsonID:
                 return i
         return -1
+
+    def JSON_parser(self, JSON_obj):
+        #print(JSON_obj)
+        #split_JSON_obj = JSON_obj.split(':')
+        #print(split_JSON_obj)
+        #emptyString, split_JSON_obj, emptyShit = JSON_obj.split(':')
+        if (len(JSON_obj) > 1):
+            try:
+                parsed_JSON_obj = json.loads(JSON_obj)
+                print(parsed_JSON_obj)
+                return parsed_JSON_obj
+                #self.print_JSON_obj()
+            except Exception as e:
+                print("Unexpected error: " + e)
+        return False
 
     def Algo_peerPersuit(self, RTK_point):
         if self.init_process:
