@@ -26,7 +26,7 @@ class TcpServer:
         self.clientSocket = None
         self.clientAddress = None
 
-        self.sending_timer = 0.1
+        self.sending_timer = 0.1  # minska för att öka antalet meddelanden per sekund
         self.last_send = 0
 
     def reset(self):
