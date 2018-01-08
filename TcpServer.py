@@ -1,6 +1,7 @@
 from socket import *
 from threading import Thread
 from MessageHandler import MessageHandler
+from time import time
 import datetime
 
 
@@ -24,6 +25,9 @@ class TcpServer:
         self.first = True
         self.clientSocket = None
         self.clientAddress = None
+
+        self.sending_timer = 0.1
+        self.last_send = 0
 
     def reset(self):
         print("[" + self.id + "] Resetting")
@@ -55,8 +59,8 @@ class TcpServer:
             print("[" + self.id + "]" + str(e) + " Stopped listening")
             self.disconnect()
             return False
-        self.listenSocket.shutdown(SHUT_RDWR)
-        self.listenSocket.close()
+        #self.listenSocket.shutdown(SHUT_RDWR)
+        #self.listenSocket.close()
         print("[" + self.id + "] Connection established - Client: " + str(self.clientAddress))
         self.connected = True
         return True
@@ -72,19 +76,19 @@ class TcpServer:
         try:
             self.clientSocket.shutdown(SHUT_RDWR)
         except Exception as e:
-            print("["+self.id+"]"+str(e))
+            print("["+self.id+"][disconnect1]"+str(e))
         try:
             self.clientSocket.close()
         except Exception as e:
-            print("["+self.id+"]"+str(e))
+            print("["+self.id+"][disconnect2]"+str(e))
         try:
             self.listenSocket.shutdown(SHUT_RDWR)
         except Exception as e:
-            print("["+self.id+"]"+str(e))
+            print("["+self.id+"][disconnect3]"+str(e))
         try:
             self.listenSocket.close()
         except Exception as e:
-            print("["+self.id+"]"+str(e))
+            print("["+self.id+"][disconnect4]"+str(e))
         self.connected = False
 
     # set which IP addresses the server accepts
@@ -110,10 +114,13 @@ class TcpServer:
         while self.running:
             if self.sendBuffer:
                 try:
-                    data = self.sendBuffer.pop(0)
-                    #print("Data start send by server: " + str(data) + " " + str(datetime.datetime.now()))
-                    self.clientSocket.send(data.encode('UTF-8'))
-                    #print("Data done send by server: " + str(data) + " " + str(datetime.datetime.now()))
+                    now = time()
+                    if now - self.last_send > self.sending_timer:
+                        data = self.sendBuffer.pop(0)
+                        #print("Data start send by server: " + str(data) + " " + str(datetime.datetime.now()))
+                        self.clientSocket.sendall(data.encode('UTF-8'))
+                        #print("Data done send by server: " + str(data) + " " + str(datetime.datetime.now()))
+                        self.last_send = now
                 except Exception as e:
                     print(e)
                     self.running = False
