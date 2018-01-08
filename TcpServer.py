@@ -2,6 +2,7 @@ from socket import *
 from threading import Thread
 from MessageHandler import MessageHandler
 from time import time
+from collections import deque
 import datetime
 
 
@@ -185,3 +186,16 @@ class TcpServer:
 
     def setMessageHandler(self, messageHandler):
         self.messageHandler = messageHandler
+
+    def clearHandledBuffer(self):
+        self.handledData.clear()
+
+    def clearSendingBuffer(self):
+        self.sendBuffer.clear()
+
+    def clearReceivingBuffer(self):
+        self.receiveBuffer.clear()
+
+
+
+
