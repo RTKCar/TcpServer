@@ -2,7 +2,7 @@ from socket import *
 from threading import Thread
 from MessageHandler import MessageHandler
 import datetime
-
+from time import time
 
 class TcpServer:
     def __init__(self, listenport, identifier=""):
@@ -24,6 +24,9 @@ class TcpServer:
         self.first = True
         self.clientSocket = None
         self.clientAddress = None
+
+        self.sending_timer = 0.1  # minska för att öka antalet meddelanden per sekund
+        self.last_send = 0
 
     def reset(self):
         print("[" + self.id + "] Resetting")
@@ -110,10 +113,13 @@ class TcpServer:
         while self.running:
             if self.sendBuffer:
                 try:
-                    data = self.sendBuffer.pop(0)
-                    #print("Data start send by server: " + str(data) + " " + str(datetime.datetime.now()))
-                    self.clientSocket.send(data.encode('UTF-8'))
-                    #print("Data done send by server: " + str(data) + " " + str(datetime.datetime.now()))
+                    now = time()
+                    if now - self.last_send > self.sending_timer:
+                        data = self.sendBuffer.pop(0)
+                        #print("Data start send by server: " + str(data) + " " + str(datetime.datetime.now()))
+                        self.clientSocket.send(data.encode('UTF-8'))
+                        #print("Data done send by server: " + str(data) + " " + str(datetime.datetime.now()))
+                        self.last_send = now
                 except Exception as e:
                     print(e)
                     self.running = False

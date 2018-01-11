@@ -7,13 +7,15 @@ import numpy
 
 class MapAnalysis:
 
+    prev_pos = [0.0, 0.0]
+
     def __init__(self, parsed_JSON_obj):
         self.init_process = True
         self.sub_state = False
         self.ClosestNode = -1
         self.PreviousNode = -1
         self.currentNode = dict()
-        self.parsed_JSON_obj = self.JSON_parser(parsed_JSON_obj)
+        self.parsed_JSON_obj = parsed_JSON_obj
 
     def init_map(self):
         return self.init_process
@@ -34,6 +36,7 @@ class MapAnalysis:
             tempDist = self.getShortestDistance(RTK_point, tempTupple)
             if tempDist < dist:
                 index = i
+                dist = tempDist
         self.ClosestNode = index
 
     def getShortestDistance(self, RTK_point, ref_point):
@@ -58,7 +61,7 @@ class MapAnalysis:
 
     def getJsonIndex(self, jsonID):
         for i in range(0, len(self.parsed_JSON_obj)):
-            if self.parsed_JSON_obj[i].id == jsonID:
+            if self.parsed_JSON_obj[i]["id"] == jsonID:
                 return i
         return -1
 
@@ -74,7 +77,7 @@ class MapAnalysis:
                 return parsed_JSON_obj
                 #self.print_JSON_obj()
             except Exception as e:
-                print("Unexpected error: " + e)
+                print("Unexpected error: " + str(e))
         return False
 
     def Algo_peerPersuit(self, RTK_point):
@@ -87,7 +90,7 @@ class MapAnalysis:
             current_node_pos_tuple = (self.currentNode["coord"]["lat"], self.currentNode["coord"]["long"] )
             distance = self.getShortestDistance(rtk_pos_tuple, current_node_pos_tuple)
 
-            if distance <= 60:
+            if distance <= 100:
                 self.PreviousNode = self.currentNode["id"]
                 #Check for new point
                 node = self.parsed_JSON_obj[self.nextNodeIndex()]
@@ -97,12 +100,13 @@ class MapAnalysis:
                 node = self.currentNode
         else:
             #print("else")
-            node = self.parsed_JSON_obj[self.nextNodeIndex()]
+            node = self.parsed_JSON_obj[self.ClosestNode]
             self.currentNode = node
         data1 = node["coord"]["lat"]
         data2 = node["coord"]["long"]
         tempTuple = (data1, data2)
         return_data = self.getAngle(RTK_point, tempTuple)
+        print(str(return_data) + "     " + str(self.currentNode["id"]))
         return return_data
 
     def nextNodeIndex(self):
@@ -112,12 +116,14 @@ class MapAnalysis:
             #Previous node != 1
             node = self.parsed_JSON_obj[self.getJsonIndex(self.PreviousNode)]
             #number = -1
-            while True:
-                number = randint(0, len(node["conns"]))
-                if number != self.PreviousNode:
-                    return number
+
+            number = randint(0, len(node["conns"])-1)
+            connection = node["conns"][number]
+            index = self.getJsonIndex(connection)
+            return index
 
     def getAngle(self, RTK_point, node_point): # Touple = (lat, lon)
+
         #pointB = (56.664420928659816, 12.878213831335472)
         if (type(RTK_point) != tuple) or (type(node_point) != tuple):
             raise TypeError("Only tuples are supported as arguments")
@@ -135,10 +141,31 @@ class MapAnalysis:
         # Now we have the initial bearing but math.atan2 return values
         # from -180° to + 180° which is not what we want for a compass bearing
         # The solution is to normalize the initial bearing as shown below
-        initial_bearing = math.degrees(initial_bearing)
-        compass_bearing = (initial_bearing + 360) % 360
+        initial_bearing = math.degrees(initial_bearing) # rad * 180 / pi = deg
+        #compass_bearing = (initial_bearing + 360) % 360
         #send_to_sub_unit = "10:" + str(compass_bearing) + ":0:0:0:0:0:0:0"
-        return compass_bearing
+
+        #For Prev node
+
+        lat1 = math.radians(self.prev_pos[0])
+        lat2 = math.radians(RTK_point[0])
+
+        diffLong = math.radians(RTK_point[1] - self.prev_pos[1])
+
+        x = math.sin(diffLong) * math.cos(lat2)
+        y = math.cos(lat1) * math.sin(lat2) - (math.sin(lat1) * math.cos(lat2) * math.cos(diffLong))
+
+        initial_bearing_prev = math.atan2(x, y)
+
+        # Now we have the initial bearing but math.atan2 return values
+        # from -180° to + 180° which is not what we want for a compass bearing
+        # The solution is to normalize the initial bearing as shown below
+        initial_bearing_prev = math.degrees(initial_bearing_prev)
+        #compass_bearing_prev = (initial_bearing + 360) % 360
+        self.prev_pos[0] = RTK_point[0]
+        self.prev_pos[1] = RTK_point[1]
+        to_be_returned = initial_bearing - initial_bearing_prev
+        return to_be_returned
 
     def testfunc(self, RTK_point):
         print("testFUNC")
