@@ -18,3 +18,4 @@ class RTKHandler(MessageHandler):
                 #print(handled_data)
                 return (0, (parse_msg.latitude, parse_msg.longitude), fixed_status) #returnera
         return (-1, "")
+

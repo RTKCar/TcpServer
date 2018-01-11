@@ -47,6 +47,7 @@ def GUI():
         while not GuiCon.isRunning():
             pass
 
+
     if GuiCon.isDataAvailable():
         data = GuiCon.getHandledData()
         if data[0] == 0:

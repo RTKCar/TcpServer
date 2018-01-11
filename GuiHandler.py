@@ -2,6 +2,7 @@ from MessageHandler import MessageHandler
 import json
 
 
+
 class GuiHandler(MessageHandler):
     def handle(self, data):
         if str(data).startswith("MAP;"):

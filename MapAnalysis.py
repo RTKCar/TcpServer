@@ -5,6 +5,7 @@ from random import randint
 import numpy
 #from BaseStation import BaseStation
 
+
 class MapAnalysis:
 
     prev_pos = [0.0, 0.0]
